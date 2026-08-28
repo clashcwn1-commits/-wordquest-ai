@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111827">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>WordQuest AI</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div>
+      <div class="brand">WordQuest <span>AI</span></div>
+      <div class="sub">Картки + міні-ігри + AI</div>
+    </div>
+    <button id="theme" class="icon">☀️</button>
+  </header>
+
+  <main>
+    <section id="home" class="page active">
+      <div class="hero">
+        <div>
+          <div class="badge">Твоя бібліотека</div>
+          <h1>Вчи слова<br>як у грі 🎮</h1>
+          <p>Створюй картки самостійно або доручи це AI.</p>
+        </div>
+        <button class="cta" data-page="create">+ Новий набір</button>
+      </div>
+
+      <div class="quick">
+        <button class="quickCard aiCard" data-page="ai">
+          <div class="emoji">✨</div>
+          <b>Створити з AI</b>
+          <span>Тема → готові картки</span>
+        </button>
+        <button class="quickCard" data-page="create">
+          <div class="emoji">✍️</div>
+          <b>Створити вручну</b>
+          <span>Свої слова й переклади</span>
+        </button>
+      </div>
+
+      <div class="rowtitle"><h2>Мої набори</h2><span id="setsCount"></span></div>
+      <div id="sets"></div>
+    </section>
+
+    <section id="create" class="page">
+      <div class="pagehead"><button class="back">←</button><div><h2>Новий набір</h2><p>Створи власні картки</p></div></div>
+      <div class="panel">
+        <label>Назва</label>
+        <input id="setName" placeholder="Напр. Pflege B1">
+        <div class="rowtitle"><label>Картки</label><button id="addCard" class="small">+ картка</button></div>
+        <div id="cardEditor"></div>
+        <button id="saveSet" class="primary wide">Зберегти набір</button>
+      </div>
+    </section>
+
+    <section id="ai" class="page">
+      <div class="pagehead"><button class="back">←</button><div><h2>AI генератор ✨</h2><p>Опиши, що хочеш вивчити</p></div></div>
+      <div class="panel">
+        <label>Що створити?</label>
+        <textarea id="aiPrompt" rows="5" placeholder="Наприклад: 20 німецьких слів на тему догляду за пацієнтом, рівень B1, німецька → українська"></textarea>
+        <div class="twocol">
+          <div><label>Кількість</label><select id="aiCount"><option>10</option><option selected>20</option><option>30</option><option>40</option></select></div>
+          <div><label>Тип</label><select id="aiType"><option value="words">Слова</option><option value="phrases">Фрази</option><option value="qa">Питання-відповідь</option></select></div>
+        </div>
+        <button id="generate" class="primary wide">✨ Згенерувати картки</button>
+        <div id="aiStatus" class="status"></div>
+      </div>
+      <div id="aiResult" class="panel hidden">
+        <div class="rowtitle"><h3>Готові картки</h3><button id="editGenerated" class="small">Редагувати</button></div>
+        <div id="generatedPreview"></div>
+        <button id="saveGenerated" class="success wide">Зберегти набір</button>
+      </div>
+    </section>
+
+    <section id="study" class="page">
+      <div class="pagehead"><button class="back">←</button><div><h2 id="studyTitle"></h2><p id="studyMeta"></p></div></div>
+      <div class="modegrid">
+        <button data-mode="flash" class="mode"><div>🃏</div><b>Картки</b><span>Перегортай і запам’ятовуй</span></button>
+        <button data-mode="quiz" class="mode"><div>🎯</div><b>Тест</b><span>4 варіанти відповіді</span></button>
+        <button data-mode="type" class="mode"><div>⌨️</div><b>Напиши</b><span>Введи відповідь сам</span></button>
+        <button data-mode="match" class="mode"><div>⚡</div><b>Match</b><span>Знайди правильні пари</span></button>
+      </div>
+      <div class="panel">
+        <div class="rowtitle"><h3>Прогрес</h3><b id="progressText"></b></div>
+        <div class="bar"><div id="progressBar"></div></div>
+      </div>
+    </section>
+
+    <section id="game" class="page">
+      <div class="pagehead"><button id="gameBack">←</button><div><h2 id="gameTitle"></h2><p id="gameCounter"></p></div></div>
+      <div id="gameArea"></div>
+    </section>
+  </main>
+
+  <nav>
+    <button data-page="home" class="navactive">🏠<span>Головна</span></button>
+    <button data-page="ai">✨<span>AI</span></button>
+    <button data-page="create">➕<span>Створити</span></button>
+  </nav>
+</div>
+<script src="/app.js"></script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
+</body>
+</html>
