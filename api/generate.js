@@ -1,9 +1,3 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
@@ -12,11 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const {
-      prompt,
-      count = 20,
-      type = "words"
-    } = req.body || {};
+    const { prompt, count = 20, type = "words" } = req.body || {};
 
     if (!prompt) {
       return res.status(400).json({
@@ -24,81 +14,110 @@ export default async function handler(req, res) {
       });
     }
 
-    const amount = Math.max(
-      5,
-      Math.min(Number(count) || 20, 50)
-    );
+    const amount = Math.max(5, Math.min(Number(count) || 20, 50));
 
-    const instructions = `
-Ти створюєш навчальні флеш-картки.
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        error: "OPENAI_API_KEY не налаштований у Vercel."
+      });
+    }
 
-Користувач просить:
+    const instruction = `
+Створи навчальні флеш-картки.
+
+Запит користувача:
 ${prompt}
 
-Кількість карток: ${amount}
+Кількість: ${amount}
 Тип: ${type}
 
-Поверни ТІЛЬКИ валідний JSON без markdown і без пояснень.
+Поверни ТІЛЬКИ валідний JSON без markdown:
 
-Формат:
 {
   "title": "Коротка назва набору",
   "cards": [
     {
-      "q": "слово, фраза або питання",
+      "q": "слово або питання",
       "a": "переклад або відповідь"
     }
   ]
 }
 
 Правила:
-- створи рівно ${amount} карток;
-- не дублюй картки;
-- використовуй мови, які просить користувач;
-- не додавай нумерацію;
-- q і a мають бути короткими та зрозумілими.
+- рівно ${amount} карток;
+- без дублів;
+- без нумерації;
+- використовуй мови, які просить користувач.
 `;
 
-    const response = await client.responses.create({
-      model: "gpt-5.6-luna",
-      input: instructions
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-5.6-luna",
+        input: instruction
+      })
     });
 
-    let text = response.output_text?.trim();
+    const data = await response.json();
 
-    if (!text) {
-      throw new Error("AI повернув порожню відповідь");
+    if (!response.ok) {
+      console.error("OpenAI error:", data);
+
+      return res.status(response.status).json({
+        error: data?.error?.message || "Помилка OpenAI API."
+      });
+    }
+
+    let text = "";
+
+    if (typeof data.output_text === "string") {
+      text = data.output_text;
+    } else if (Array.isArray(data.output)) {
+      for (const item of data.output) {
+        if (!Array.isArray(item.content)) continue;
+
+        for (const part of item.content) {
+          if (part.type === "output_text" && typeof part.text === "string") {
+            text += part.text;
+          }
+        }
+      }
     }
 
     text = text
+      .trim()
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
       .replace(/\s*```$/i, "");
 
-    const data = JSON.parse(text);
-
-    if (!data || !Array.isArray(data.cards)) {
-      throw new Error("Неправильний формат відповіді AI");
+    if (!text) {
+      return res.status(500).json({
+        error: "AI повернув порожню відповідь."
+      });
     }
 
-    const cards = data.cards
-      .filter(card =>
-        card &&
-        typeof card.q === "string" &&
-        typeof card.a === "string"
-      )
-      .slice(0, amount);
+    const parsed = JSON.parse(text);
+
+    if (!Array.isArray(parsed.cards)) {
+      return res.status(500).json({
+        error: "AI повернув неправильний формат."
+      });
+    }
 
     return res.status(200).json({
-      title: data.title || "AI набір",
-      cards
+      title: parsed.title || "AI набір",
+      cards: parsed.cards.slice(0, amount)
     });
 
   } catch (error) {
-    console.error("AI generation error:", error);
+    console.error("generate.js crash:", error);
 
     return res.status(500).json({
-      error: error?.message || "Не вдалося створити картки."
+      error: error?.message || "Server error."
     });
   }
 }
